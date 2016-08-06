@@ -4,7 +4,7 @@
 Author:  Thomas Laurenson
 Email:   thomas@thomaslaurenson.com
 Website: thomaslaurenson.com
-Date:    2015/05/13
+Date:    2016/08/07
 
 Description:
 NetXML.py is an API that can parse the contents of a NetXML document. The
@@ -14,7 +14,7 @@ The NetXML.py module creates major NetXML classes with an emphasis on type
 safety, serializability, and de-serializability. You can process a NetXML
 document using the iterparse function.
 
-Copyright (c) 2015, Thomas Laurenson
+Copyright (c) 2016, Thomas Laurenson
 
 ###############################################################################
 This program is free software: you can redistribute it and/or modify
@@ -105,7 +105,7 @@ def _datecast(val):
     if val is None:
         return None
     return datetime.datetime.strptime(val, "%a %b  %d %H:%M:%S %Y")
-
+    
 ################################################################################
 class NetXML(object):
     def __init__(self, **kwargs):
@@ -207,6 +207,7 @@ class WirelessNetwork(object):
                            "maxseenrate"])
 
     def populate_from_Element(self, e):
+        # Populate object from ET element
         _typecheck(e, (ET.Element, ET.ElementTree))
         (ns, tn) = _qsplit(e.tag)
         assert tn in ["wireless-network"]
@@ -243,8 +244,10 @@ class WirelessNetwork(object):
                 
             # Parse any attached Wireless Clients
             elif ctn == "wireless_client":
-                wc = WirelessClient(**e.attrib)
-                wc.populate_from_Element(ce)
+                #wc = WirelessClient(**e.attrib)
+                # Above was removed, fetched network attributes, not client!
+                wc = WirelessClient()
+                wc.populate_from_Element(ce, self.number)
                 self._WirelessClients.append(wc)
                                 
             elif ctn == "freqmhz":
@@ -400,13 +403,18 @@ class WirelessNetwork(object):
 class WirelessClient(object):
     def __init__(self, **kwargs):
         self.netxml_type = "client"
-        self.number = kwargs.get("number")
-        self.network_type = kwargs.get("type")
-        self.first_time = _datecast(kwargs.get("first-time"))
-        self.last_time = _datecast(kwargs.get("last-time"))
+        # Initially, set attribute to None
+        self.number = None
+        self.type = None
+        self.first_time = None
+        self.last_time = None
+        # Initialise client XML child elements
         self._ssid = None
         self._freqmhz = list()
         self._encryption = list()
+        # Initially, set parent network number to None
+        self.network_number = None        
+        
         # Initialise WirelessClient attributes
         for prop in self._all_properties:
             setattr(self, prop, kwargs.get(prop))
@@ -423,6 +431,7 @@ class WirelessClient(object):
         for prop in GPSInfoObject._all_properties:
             setattr(self, prop, kwargs.get(prop))
 
+    # All possible WirelessClient XML elements
     _all_properties = set(["client_mac",
                            "client_manuf",
                            "channel",
@@ -430,16 +439,39 @@ class WirelessClient(object):
                            "datasize",
                            "encoding",
                            "carrier"])
+                           
+    # All possible WirelessClient XML attributes
+    _all_attributes = set(["number",
+                           "type",
+                           "first_time",
+                           "last_time"])                                                       
 
-    def populate_from_Element(self, e):
+    def populate_from_Element(self, e, number):
+        # Populate a WirelessClient object from given ET element
+        # Set parent network number to supplied number
+        self.network_number = number
+        # Check we have an ET element
         _typecheck(e, (ET.Element, ET.ElementTree))
+        # Split XML tag and check we have a "wireless-client"
         (ns, tn) = _qsplit(e.tag)
         assert tn in ["wireless-client"]
+        
+        # Parse wireless-client attributes
+        for attrib in e.attrib:
+            if attrib in WirelessClient._all_attributes:
+                if "-" in attrib:
+                    attrib_fix = attrib.replace("-", "_")  
+                    setattr(self, attrib_fix, e.get(attrib))
+                else:
+                    setattr(self, attrib, e.get(attrib))
+
+        # Parse wireless-client XML tags
         for ce in e.findall("./*"):
             (cns, ctn) = _qsplit(ce.tag)
             ctn = ctn.lower()
             if "-" in ctn:
                 ctn = ctn.replace("-", "_")
+            
             # Parse the SSID element and children
             if ctn == "ssid":
                 ssid = SSIDObject(**e.attrib)
@@ -463,10 +495,12 @@ class WirelessClient(object):
                 gps = GPSInfoObject(**e.attrib)
                 gps.populate_from_Element(ce)
                 self._gps = gps
-
+            
+            # Parse client frequency, may be multiple, so append to list
             elif ctn == "freqmhz":
                 self._freqmhz.append(ce.text)
 
+            # Parse all remaining wireless-client properties
             elif ctn in WirelessClient._all_properties:
                 setattr(self, ctn, ce.text)            
 
@@ -642,7 +676,7 @@ class SSIDObject(object):
                            "wpa_version",
                            "wps"])
 
-    # SSID Population from ElementTree Element
+    # SSID Population from ET element
     def populate_from_Element(self, e):
         _typecheck(e, (ET.Element, ET.ElementTree))
         (ns, tn) = _qsplit(e.tag)
