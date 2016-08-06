@@ -4,7 +4,7 @@
 Author:  Thomas Laurenson
 Email:   thomas@thomaslaurenson.com
 Website: thomaslaurenson.com
-Date:    2015/08/03
+Date:    2016/08/07
 
 Description:
 Convert a NetXML file into a CSV file using the NetXML.py API.
@@ -46,14 +46,16 @@ if __name__=="__main__":
 
     # Parse NetXML file using NetXML.iterparse
     netxml = NetXML.iterparse(args.netxml_file)
-    
+    #quit()
     # Set up the CSV writer
     output = csv.writer(sys.stdout, delimiter='\t')
     
     # Write CSV headers
-    output.writerow(("number",
+    output.writerow(("type",
+                     "network_number",
+                     "client_number",
                      "network_type",
-                     "bssid",
+                     "mac_address",
                      "essid",
                      "manuf",
                      "channel",
@@ -68,6 +70,8 @@ if __name__=="__main__":
                      "wpa_version",
                      "wps",
                      "ssid_frame_type",
+                     "carrier",
+                     "encoding",
                      "first_time",
                      "last_time",
                      "max_seen_rate",
@@ -95,9 +99,13 @@ if __name__=="__main__":
                      "avg_alt"))     
     
     # Print WirelessNetworks in CSV format to std.out
+    current_network_mac = None
     for wn in netxml:
         if isinstance(wn, NetXML.WirelessNetwork):
-            output.writerow((wn.number,
+            current_network_mac = wn.bssid
+            output.writerow((wn.netxml_type,
+                             wn.number,
+                             "",
                              wn.network_type,
                              wn.bssid,
                              wn.ssid.essid,
@@ -113,11 +121,62 @@ if __name__=="__main__":
                              wn.ssid.authentication,
                              wn.ssid.wpa_version,
                              wn.ssid.wps,
-                             wn.ssid.frame_type,                             
+                             wn.ssid.frame_type,
+                             "",
+                             "",                             
                              wn.first_time, 
                              wn.last_time,
                              wn.maxseenrate,
                              wn.ssid.packets,
+                             wn._packets.llc,
+                             wn._packets.data,
+                             wn._packets.crypt,
+                             wn._packets.fragments,
+                             wn._packets.retries,
+                             wn._packets.total,
+                             wn.datasize,
+                             wn._gps.min_lat,
+                             wn._gps.min_lon,
+                             wn._gps.min_alt,
+                             wn._gps.min_spd,
+                             wn._gps.max_lat,
+                             wn._gps.max_lon,
+                             wn._gps.max_alt,
+                             wn._gps.max_spd,
+                             wn._gps.peak_lat,
+                             wn._gps.peak_lon,
+                             wn._gps.peak_alt,
+                             wn._gps.avg_lat,
+                             wn._gps.avg_lon,
+                             wn._gps.avg_alt))
+        if isinstance(wn, NetXML.WirelessClient):
+            if current_network_mac == wn.client_mac:
+                continue
+            output.writerow((wn.netxml_type,
+                             wn.network_number,
+                             wn.number,
+                             wn.type,
+                             wn.client_mac,
+                             "",
+                             wn.client_manuf,
+                             wn.channel,
+                             ";".join(wn.freqmhz),
+                             "",
+                             "",
+                             "",
+                             "",
+                             "",
+                             "",
+                             "",
+                             "",
+                             "",
+                             "",
+                             wn.carrier,
+                             wn.encoding,                            
+                             wn.first_time, 
+                             wn.last_time,
+                             wn.maxseenrate,
+                             "",
                              wn._packets.llc,
                              wn._packets.data,
                              wn._packets.crypt,
