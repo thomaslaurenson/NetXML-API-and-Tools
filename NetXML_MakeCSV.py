@@ -39,14 +39,14 @@ import NetXML
 ################################################################################
 if __name__=="__main__":
     import argparse
-    parser = argparse.ArgumentParser(description='''MakeNetworksCSV.py''')
+    parser = argparse.ArgumentParser(description='''NetXML_MakeCSV.py''')
     parser.add_argument("netxml_file",
                         help = "Target NetXML file (e.g. Kismet-20150506-08-23-31-1.netxml)")
     args = parser.parse_args()
 
     # Parse NetXML file using NetXML.iterparse
     netxml = NetXML.iterparse(args.netxml_file)
-    #quit()
+
     # Set up the CSV writer
     output = csv.writer(sys.stdout, delimiter='\t')
     
