@@ -29,3 +29,9 @@ for wn in netxml:
 Create a CSV file from a NetXML file:
 
 `python3.4 NetXML_MakeCSV.py Kismet-20150505-05-15-05-1.netxml`
+
+## NetXML_MakeKML.py
+
+A KML file can be imported into Google Earth or Google Maps. The GPS co-ordinates in the NetXML files and wireless device details are extracted and a map placemark is generated for each network. This file can easily be imported into Google Earth or Maps. Currently, the placemarkers (map pins) are colour coded by network encryption type: 1) Green is WPA2; 2) Yellow is WPA; 3) Red is WEP; and 4) White is OPEN. The following example will create a signle KML file from a NetXML file:
+
+`python3.4 NetXML_MakeKML.py Kismet-20150505-05-15-05-1.netxml`
